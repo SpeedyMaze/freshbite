@@ -9,9 +9,17 @@ import plotly.graph_objects as go
 # ==========================================
 st.set_page_config(page_title="FreshBite Decision Matrix", layout="wide")
 
+# FIX: Added 'color: #333333;' so the text doesn't turn white in Dark Mode!
 st.markdown("""
 <style>
-    .kpi-container { padding: 1rem; border-radius: 8px; background: #f8f9fa; border-left: 5px solid #004085; margin-bottom: 1rem; }
+    .kpi-container { 
+        padding: 1.5rem; 
+        border-radius: 8px; 
+        background: #f8f9fa; 
+        border-left: 5px solid #004085; 
+        margin-bottom: 1rem; 
+        color: #333333; 
+    }
     .status-viable { color: #155724; background-color: #d4edda; padding: 5px 10px; border-radius: 4px; font-weight: 600; }
     .status-unviable { color: #721c24; background-color: #f8d7da; padding: 5px 10px; border-radius: 4px; font-weight: 600; }
 </style>
@@ -21,16 +29,14 @@ st.markdown("""
 # DATA MODELS
 # ==========================================
 def load_data():
-    # Historical Data
     hist_data = pd.DataFrame({
         'Month': ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
         'Sales_Volume': [2800, 3000, 3200, 2900, 3500, 3800, 4100, 3900, 4300, 4500, 4200, 4600]
     })
     
-    # Financial Constants
     fin = {
         'price': 250,
-        'vc_base': 130, # (72 Ingredients + 18 Packaging + 20 Labor + 20 Delivery)
+        'vc_base': 130, 
         'fc_base': 300000,
         'capacity_base': 5000,
         'corp_volume': 600,
@@ -49,19 +55,43 @@ def load_data():
 # ==========================================
 def render_executive_summary():
     st.title("📊 FreshBite Foods: Strategic Management Dashboard")
-    st.markdown("### ⏱️ Two-Minute Executive Recommendation")
-    st.markdown("""
-    <div class="kpi-container">
-        <h4>Primary Recommendation: Option B (Outsource Additional Production)</h4>
-        <p><b>Why:</b> FreshBite's projected demand (4,700 regular + 600 corporate = 5,300 bowls) exceeds the current 5,000 capacity. Outsourcing requires <b>₹0 initial investment</b> and adds <b>zero fixed costs</b>, while improving unit economics (₹125 outsourced cost vs. ₹130 internal cost). Option A stifles growth, and Option C (₹12 Lakh CapEx) introduces unnecessary fixed-cost risks in a volatile pricing environment.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### ⏱️ Executive Recommendation & Option Analysis")
+    
+    # INTERACTIVE BUTTON / TOGGLE
+    st.write("**Select a strategic option below to view the analysis:**")
+    selected_option = st.radio(
+        "Options:",
+        ["Option A: Status Quo", "Option B: Outsource (Recommended)", "Option C: ₹12L New System"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    
+    # DYNAMIC CONTENT BASED ON SELECTION
+    if "Option A" in selected_option:
+        content = """
+        <h4 style='margin-top:0;'>Option A: Maintain Current System (Status Quo)</h4>
+        <p><b>Status:</b> <span style='color:#d9534f; font-weight:bold;'>❌ UNVIABLE</span></p>
+        <p><b>Why:</b> FreshBite's factory is capped at 5,000 bowls/month. The expected forward demand is 5,300 bowls (4,700 regular + 600 corporate). Sticking to the current system forces Ananya to reject guaranteed, profitable revenue from the new corporate client because there isn't enough capacity.</p>
+        """
+    elif "Option B" in selected_option:
+        content = """
+        <h4 style='margin-top:0;'>Option B: Outsource Additional Production</h4>
+        <p><b>Status:</b> <span style='color:#5cb85c; font-weight:bold;'>✅ VIABLE (RECOMMENDED)</span></p>
+        <p><b>Why:</b> Outsourcing requires <b>₹0 initial investment</b> and adds <b>zero fixed costs</b>. It allows FreshBite to fulfill the entire 5,300 bowl demand. Better yet, the outsourced cost is ₹125/bowl (cheaper than the in-house ₹130/bowl), securing a guaranteed ₹50 margin on the corporate order without taking on any long-term risk.</p>
+        """
+    else:
+        content = """
+        <h4 style='margin-top:0;'>Option C: Invest in New Semi-Automated System</h4>
+        <p><b>Status:</b> <span style='color:#d9534f; font-weight:bold;'>❌ HIGH RISK / UNVIABLE</span></p>
+        <p><b>Why:</b> This requires a massive <b>₹12,00,000 CapEx</b> and raises monthly fixed costs by ₹1,20,000 (a 40% increase). While variable costs drop to ₹115, the break-even point jumps drastically. If market prices drop by just 10%, this high fixed-cost structure will destroy profitability.</p>
+        """
+        
+    st.markdown(f'<div class="kpi-container">{content}</div>', unsafe_allow_html=True)
     st.divider()
 
 def render_performance_and_breakeven(hist_data, fin):
     st.header("1. Business Performance & Break-Even Analysis")
     
-    # Calculations
     cm = fin['price'] - fin['vc_base']
     be_units = fin['fc_base'] / cm
     
@@ -75,7 +105,6 @@ def render_performance_and_breakeven(hist_data, fin):
     col3.metric("Break-Even Point", f"{int(be_units):,} units")
     col4.metric("Avg Monthly Profit (L12M)", f"₹{hist_data['Profit'].mean():,.0f}")
     
-    # Break-Even Chart
     vol_range = np.linspace(0, 6000, 100)
     rev = vol_range * fin['price']
     tc = fin['fc_base'] + (vol_range * fin['vc_base'])
@@ -91,7 +120,6 @@ def render_decision_matrix(fin):
     st.header("2. Strategic Options & Corporate Order Analysis")
     st.write("Assumed Forward Demand: **5,300 units** (4,700 Regular @ ₹250 + 600 Corporate @ ₹175)")
     
-    # Option Data
     data = {
         "Strategic Option": ["A. Status Quo", "B. Outsource (Recommended)", "C. Semi-Automated System"],
         "Viability": ["❌ UNVIABLE", "✅ VIABLE", "❌ UNVIABLE"],
